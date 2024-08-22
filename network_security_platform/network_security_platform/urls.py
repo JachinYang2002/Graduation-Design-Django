@@ -1,5 +1,5 @@
 """
-URL configuration for network_security_ctf project.
+URL configuration for network_security_platform project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/

@@ -1,5 +1,5 @@
 """
-WSGI config for network_security_ctf project.
+WSGI config for network_security_platform project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'network_security_ctf.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'network_security_platform.settings')
 
 application = get_wsgi_application()
