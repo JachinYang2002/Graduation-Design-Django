@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -43,7 +43,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -167,3 +167,45 @@ CACHES = {
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "session"
+
+# 配置项⽬日志
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False, # 是否禁用已经存在的日志器
+    'formatters': { # 日志信息显示的格式
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(module)s %(lineno)d %(message)s'
+        },
+    },
+    'filters': { # 对日志进行过滤
+        'require_debug_true': { # django在debug模式下才输出日志
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': { # ⽇志处理⽅法
+        'console': { # 向终端中输出日志
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+    'file': { # 向文件中输出日志
+        'level': 'INFO',
+        'class': 'logging.handlers.RotatingFileHandler',
+        'filename': os.path.join(BASE_DIR, 'logs/nsp.log'), # 日志⽂件的位置
+        'maxBytes': 300 * 1024 * 1024,
+        'backupCount': 10,
+        'formatter': 'verbose'
+        },
+    },
+    'loggers': { # 日志器器
+        'django': { # 定义了⼀一个名为django的⽇日志器器
+            'handlers': ['console', 'file'], # 可以同时向终端与⽂文件中输出⽇日志
+            'propagate': True,# 是否继续传递日志信息
+            'level': 'INFO',# 日志器器接收的最低⽇志级别
+        },
+    }
+}
