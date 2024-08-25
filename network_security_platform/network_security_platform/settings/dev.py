@@ -31,15 +31,18 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',  # 跨域CORS
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',  # 添加DRF
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -209,3 +212,9 @@ LOGGING = {
         },
     }
 }
+
+# 设置CORS白名单，凡是出现在白名单中的域名，都可以访问后端接口
+CORS_ORIGIN_WHITELIST = (
+    'http://127.0.0.1:8080',
+)
+CORS_ALLOW_CREDENTIALS = True # 允许携带cookie
