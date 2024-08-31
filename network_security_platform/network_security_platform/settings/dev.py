@@ -50,9 +50,9 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Cors
     'django.middleware.common.CommonMiddleware',
     # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -75,7 +75,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
             ],
             # 补充Jinja2模板引擎环境
-            'environment': 'network_security_platform.utils.jinja2_env.environment',
+            'environment': 'utils.jinja2_env.environment',
         },
     },
     {
@@ -223,8 +223,23 @@ LOGGING = {
 
 # 设置CORS白名单，凡是出现在白名单中的域名，都可以访问后端接口
 CORS_ORIGIN_WHITELIST = (
-    'http://127.0.0.1:8080',
+    'http://localhost:3000',
 )
+
+# 设置允许的header
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-token',
+]
+
 CORS_ALLOW_CREDENTIALS = True # 允许携带cookie
 
 # JWT配置
