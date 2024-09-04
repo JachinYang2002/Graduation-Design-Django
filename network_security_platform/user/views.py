@@ -1,7 +1,8 @@
 import json, re
 
+from django.contrib.auth import login
+from django.contrib.auth.hashers import make_password, check_password
 from django.db import DatabaseError
-from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,7 +18,8 @@ class UserLoginAPIView(APIView):
         request_body = request.body
         params = json.loads(request_body.decode())
 
-        if params['tag'] == 'login':  # 登录
+        # ===========================登录===============================
+        if params['tag'] == 'login':
             user = params['user']
             password = params['password']
 
@@ -34,7 +36,7 @@ class UserLoginAPIView(APIView):
             if re.match(r'^1[3-9]\d{9}$', user):  # 电话登录
                 tel = user
                 if UserBaseInfoModel.objects.filter(tel_number=tel).exists():
-                    if password == UserBaseInfoModel.objects.get(tel_number=tel).user_pwd:
+                    if check_password(password, UserBaseInfoModel.objects.get(tel_number=tel).user_pwd):
                         username = UserBaseInfoModel.objects.get(tel_number=tel).user_name
                         token = create_token.make_token(username)
                         return Response(data={'msg': '登录成功', 'token': token}, status=status.HTTP_200_OK)
@@ -46,7 +48,7 @@ class UserLoginAPIView(APIView):
             elif re.match(r'^[A-Za-z][A-Za-z0-9_]{4,19}$', user):  # 用户名登录
                 username = user
                 if UserBaseInfoModel.objects.filter(user_name=username).exists():
-                    if password == UserBaseInfoModel.objects.get(user_name=username).user_pwd:
+                    if check_password(password, UserBaseInfoModel.objects.get(user_name=username).user_pwd):
                         token = create_token.make_token(username)
                         return Response(data={'msg': '登录成功', 'token': token}, status=status.HTTP_200_OK)
                     else:
@@ -56,7 +58,8 @@ class UserLoginAPIView(APIView):
             else:
                 return Response(data={'msg':'登录失败：用户名或电话号码格式有误'}, status=status.HTTP_201_CREATED)
 
-        elif params['tag'] == 'register':  # 注册
+        # ===========================注册===============================
+        elif params['tag'] == 'register':
             telephone = params['telephoneNumber']
             password = params['password']
             code = params['verificationCode']
@@ -78,11 +81,17 @@ class UserLoginAPIView(APIView):
             # 判断验证码格式
 
 
+            # 密码加密存储
+            encrypt_password = make_password(password)
+
             # 保存注册数据（入库操作）
             try:
-                UserBaseInfoModel.objects.create(tel_number=telephone, user_pwd=password)
+                user = UserBaseInfoModel.objects.create(tel_number=telephone, user_pwd=encrypt_password)
             except DatabaseError:
-                return Response(data={'msg':'注册失败'}, status=status.HTTP_200_OK)
+                return Response(data={'msg':'注册失败', 'errorInfo': DatabaseError}, status=status.HTTP_200_OK)
+
+            # 状态保持
+            # login(request, user)
 
             # 返回响应数据
-            return HttpResponse('注册成功')
+            return Response(data={'msg':'注册成功'}, status=status.HTTP_200_OK)
