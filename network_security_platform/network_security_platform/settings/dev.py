@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os, time
 from pathlib import Path
-import user
+import user_app
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # 添加DRF
-    'user'
+    'user_app'  # 用户模块子应用
 ]
 
 # 设置分页器
@@ -234,7 +234,7 @@ CORS_ALLOW_HEADERS = [
     'content-type',
     'dnt',
     'origin',
-    'user-agent',
+    'user_app-agent',
     'x-csrftoken',
     'x-requested-with',
     'x-token',
@@ -256,4 +256,7 @@ JWT_AUTH = {
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
 # 配置 MEDIA_URL 作为公用 URL，指向上传文件的基本路径
 MEDIA_URL = '/media/'
-# 这里特意写成 upload 和 media，而不是统一写成 media 或 upload，是为了便于理解 MEDIA_ROOT 和 MEDIA_URL 的作用和区别
+
+#配置规则：
+# AUTH_USER_MODEL = '应⽤用名.模型类名'
+AUTH_USER_MODEL = 'user_app.UserBaseInfoModel'
