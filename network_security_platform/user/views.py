@@ -1,13 +1,24 @@
 import json, re
 
+import snowflake.client
 from django.contrib.auth import login
 from django.contrib.auth.hashers import make_password, check_password
 from django.db import DatabaseError
+from django.utils.crypto import get_random_string
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from utils import create_token
 from .models import UserBaseInfoModel
+
+
+# 注册时生成默认用户名，并检查是否重复
+def check_username(tel):
+    chars = 'abcdefghijklmnopqrstuvwxyz1234567890'
+    user_name = get_random_string(length=5, allowed_chars=chars) + '_' + tel[-4:]
+    if UserBaseInfoModel.objects.filter(user_name=user_name).exists():
+        check_username(tel)
+    return user_name
 
 
 # Create your views here.
@@ -70,23 +81,32 @@ class UserLoginAPIView(APIView):
                 return Response(data={'msg':'注册失败：填写信息不完整'}, status=status.HTTP_200_OK)
 
 
-            # 判断电话号码格式
+            # 判断电话号码格式、是否重复注册
             if not re.match(r'^1[3-9]\d{9}$', telephone):
                 return Response(data={'msg':'注册失败：请填写正确的手机号码'}, status=status.HTTP_200_OK)
+            if UserBaseInfoModel.objects.filter(tel_number=telephone).exists():
+                return Response(data={'msg': '注册失败：该号码已被注册'}, status=status.HTTP_200_OK)
 
             # 判断密码格式
             if not re.match(r'^[A-Za-z][A-Za-z0-9_.*#/]{5,17}$', password):
                 return Response(data={'msg':'注册失败：密码格式有误'}, status=status.HTTP_200_OK)
 
             # 判断验证码格式
-
+            if not re.match(r'^[1-9]{4}$', code):
+                return Response(data={'msg':'注册失败：验证码格式有误'}, status=status.HTTP_200_OK)
 
             # 密码加密存储
             encrypt_password = make_password(password)
 
+            # 雪花算法生成唯一user_id
+            user_id = snowflake.client.get_guid()
+
+            # 生成默认user_name
+            user_name = check_username(telephone)
+
             # 保存注册数据（入库操作）
             try:
-                user = UserBaseInfoModel.objects.create(tel_number=telephone, user_pwd=encrypt_password)
+                user = UserBaseInfoModel.objects.create(tel_number=telephone, user_pwd=encrypt_password, user_id=user_id, user_name=user_name)
             except DatabaseError:
                 return Response(data={'msg':'注册失败', 'errorInfo': DatabaseError}, status=status.HTTP_200_OK)
 
