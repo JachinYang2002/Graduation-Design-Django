@@ -2,7 +2,7 @@ import json, re
 
 import snowflake.client
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password
 from django.db import DatabaseError
 from django.utils.crypto import get_random_string
 from rest_framework import status
@@ -19,6 +19,16 @@ def check_username(tel):
     if UserBaseInfoModel.objects.filter(username=user_name).exists():
         check_username(tel)
     return user_name
+
+# 登录时将用户的信息传送到前端
+def get_userinfo(username):
+    telephone = UserBaseInfoModel.objects.get(username=username).telephone
+    gender = UserBaseInfoModel.objects.get(username=username).gender
+    user_id = UserBaseInfoModel.objects.get(username=username).user_id
+    userinfo = {'username': username ,'telephone': telephone, 'gender': gender, 'user_id': user_id}
+    return userinfo
+
+
 
 
 # Create your views here.
@@ -46,31 +56,38 @@ class UserLoginAPIView(APIView):
             # 判断user是username、telephone
             if re.match(r'^1[3-9]\d{9}$', user):  # 电话登录
                 tel = user
-                try:
+                if UserBaseInfoModel.objects.filter(telephone=tel).exists():
                     username = UserBaseInfoModel.objects.get(telephone=tel).username
-                except UserBaseInfoModel.DoesNotExist as e:
-                    return Response(data={'msg': '登录失败：电话还未被注册', 'error':e}, status=status.HTTP_201_CREATED)
-                auth_user = authenticate(username=username, password=password)
-                if auth_user is not None:
-                    token = create_token.make_token(username)
-                    login(request, auth_user)
-                    return Response(data={'msg': '登录成功', 'token': token}, status=status.HTTP_200_OK)
+                    auth_user = authenticate(username=username, password=password)
+                    if auth_user is not None:
+                        token = create_token.make_token(username)  # 创建Token
+                        login(request, auth_user)  # 保持登录状态
+                        # 要传递给前端的用户信息
+                        userinfo = get_userinfo(username)
+
+                        return Response(data={'msg': '登录成功', 'token': token, 'userinfo': userinfo}, status=status.HTTP_200_OK)
+                    else:
+                        return Response(data={'msg': '登录失败：密码有误'}, status=status.HTTP_201_CREATED)
                 else:
-                    return Response(data={'msg': '登录失败'}, status=status.HTTP_201_CREATED)
+                    return Response(data={'msg': '登录失败：该号码未被注册'}, status=status.HTTP_201_CREATED)
 
             elif re.match(r'^[A-Za-z][A-Za-z0-9_]{4,19}$', user):  # 用户名登录
                 username = user
                 if UserBaseInfoModel.objects.filter(username=username).exists():
-                    if check_password(password, UserBaseInfoModel.objects.get(username=username).password):
-                        token = create_token.make_token(username)
-                        return Response(data={'msg': '登录成功', 'token': token}, status=status.HTTP_200_OK)
+                    auth_user = authenticate(username=username, password=password)
+                    if auth_user is not None:
+                        token = create_token.make_token(username)  # 创建Token
+                        login(request, auth_user)  # 保持登录状态
+                        # 要传递给前端的用户信息
+                        userinfo = get_userinfo(username)
+
+                        return Response(data={'msg': '登录成功', 'token': token, 'userInfo': userinfo}, status=status.HTTP_200_OK)
                     else:
                         return Response(data={'msg': '登录失败：密码有误'}, status=status.HTTP_201_CREATED)
                 else:
-                    return Response(data={'msg': '登录失败：未查询到该用户名'}, status=status.HTTP_201_CREATED)
+                    return Response(data={'msg': '登录失败：该用户名不存在'}, status=status.HTTP_201_CREATED)
             else:
-                return Response(data={'msg':'登录失败：用户名或电话号码格式有误'}, status=status.HTTP_201_CREATED)
-
+                return Response(data={'msg': '登录失败'}, status=status.HTTP_201_CREATED)
         # ===========================注册===============================
         elif params['tag'] == 'register':
             telephone = params['telephoneNumber']

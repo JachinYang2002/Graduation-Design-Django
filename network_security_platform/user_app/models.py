@@ -9,9 +9,9 @@ class UserBaseInfoModel(AbstractUser ,base_model.BaseModel):
     用户基本信息模型
     """
     SEX_CHOICE = (
-        (0, "secret"),
-        (1, "man"),
-        (2, 'female')
+        (0, "保密"),
+        (1, "男"),
+        (2, '女')
     )
     
     username = models.CharField(verbose_name='昵称', max_length=10, unique=True)
