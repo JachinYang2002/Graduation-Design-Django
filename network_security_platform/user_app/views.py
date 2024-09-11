@@ -11,7 +11,6 @@ from rest_framework.views import APIView
 from utils import create_token
 from .models import UserBaseInfoModel
 
-
 # 注册时生成默认用户名，并检查是否重复
 def check_username(tel):
     chars = 'abcdefghijklmnopqrstuvwxyz'
@@ -27,8 +26,6 @@ def get_userinfo(username):
     user_id = UserBaseInfoModel.objects.get(username=username).user_id
     userinfo = {'username': username ,'telephone': telephone, 'gender': gender, 'user_id': user_id}
     return userinfo
-
-
 
 
 # Create your views here.
@@ -131,3 +128,13 @@ class UserLoginAPIView(APIView):
 
             # 返回响应数据
             return Response(data={'msg':'注册成功'}, status=status.HTTP_200_OK)
+
+
+class UserLogoutAPIView(APIView):
+    def get(self, request):
+        try:
+            logout(request)
+        except Exception as e:
+            return Response(data={'msg': '注销失败', 'errorInfo': e}, status=status.HTTP_201_CREATED)
+
+        return Response(data={'msg': '注销成功'} ,status=status.HTTP_200_OK)
