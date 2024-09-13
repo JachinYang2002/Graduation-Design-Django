@@ -255,8 +255,12 @@ JWT_AUTH = {
 # 配置 MEDIA_ROOT 作为上传文件在服务器中的基本路径
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
 # 配置 MEDIA_URL 作为公用 URL，指向上传文件的基本路径
-MEDIA_URL = '/media/'
+MEDIA_URL = '/upload/'
 
-#配置规则：
-# AUTH_USER_MODEL = '应⽤用名.模型类名'
+# 配置规则： AUTH_USER_MODEL = '应⽤用名.模型类名'
 AUTH_USER_MODEL = 'user_app.UserBaseInfoModel'
+
+# 容联云短信验证码参数
+accId = '2c94811c8853194e0188616ffbeb0324'
+accToken = '35a494f497cd4f37989b879a61a35602'
+appId = '2c94811c8853194e0188616ffd23032b'

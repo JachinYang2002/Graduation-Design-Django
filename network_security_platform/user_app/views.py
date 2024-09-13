@@ -1,5 +1,7 @@
 import json, re
+import random
 
+import django_redis
 import snowflake.client
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.hashers import make_password
@@ -9,6 +11,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from utils import create_token
+from utils.send_Sms import send_sms_code
 from .models import UserBaseInfoModel
 
 
@@ -31,7 +34,6 @@ def get_userinfo(username):
 
 
 # Create your views here.
-
 @api_view(['POST'])
 def UserLoginRegisterAPIView(request):
     """
@@ -114,8 +116,18 @@ def UserLoginRegisterAPIView(request):
             return Response(data={'msg': '注册失败：密码格式有误'}, status=status.HTTP_201_CREATED)
 
         # 判断验证码格式
-        if not re.match(r'^[1-9]{4}$', code):
+        if not re.match(r'^[0-9]{4}$', code):
             return Response(data={'msg': '注册失败：验证码格式有误'}, status=status.HTTP_201_CREATED)
+
+        redis_conn = django_redis.get_redis_connection('verify_code')  # 连接redis数据库
+        redis_code = redis_conn.get('sms_%s' % telephone)  # 在数据库中查找是否有验证码
+        if redis_code is None:
+            return Response(data={'msg': '注册失败：验证码失效或错误'}, status=status.HTTP_201_CREATED)
+
+        if redis_code.decode('utf-8') == code:
+            pass
+        else:
+            return Response(data={'msg': '注册失败：验证码格式错误'}, status=status.HTTP_201_CREATED)
 
         # 密码加密存储
         encrypt_password = make_password(password)
@@ -148,3 +160,85 @@ def UserLogoutAPIView(request):
         return Response(data={'msg': '注销失败', 'errorInfo': e}, status=status.HTTP_201_CREATED)
 
     return Response(data={'msg': '注销成功'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def SMSCode(request):
+    """
+    发送短信验证码完成注册的API接口
+    """
+    # 接收请求参数（表单参数）
+    request_body = request.body
+    params = json.loads(request_body.decode())
+
+    telephone = params['tel']
+
+    # 判断电话号码格式、是否重复注册
+    if not re.match(r'^1[3-9]\d{9}$', telephone):
+        return Response(data={'msg': '发送失败：请填写正确的手机号码'}, status=status.HTTP_201_CREATED)
+    if UserBaseInfoModel.objects.filter(telephone=telephone).exists():
+        return Response(data={'msg': '发送失败：该号码已被注册'}, status=status.HTTP_201_CREATED)
+
+    sms_code = random.randint(1000, 9999)
+    res = send_sms_code( sms_code,telephone)
+    # {"statusCode":"000000",
+    #  "templateSMS":{"smsMessageSid":"305c3b5f25a74cbb99672c2e9d7651b6","dateCreated":"20240913205034"}}
+
+    # 连接Redis的2号数据库
+    redis_conn = django_redis.get_redis_connection('verify_code')
+    # 创建Redis管道
+    pl = redis_conn.pipeline()
+
+    is_send = redis_conn.get('is_send_%s' % telephone)
+    if is_send:
+        return Response(data={'msg': '发送失败：发送短信过于频繁'}, status=status.HTTP_201_CREATED)
+
+    a = res['statusCode']
+    print(a)
+    if res['statusCode'] == '000000':
+        try:
+            # 将Redis请求添加到队列
+            pl.setex('sms_%s' % telephone, 180, sms_code)
+            pl.setex('is_send_%s' % telephone, 60, 1)
+            # 执⾏请求
+            pl.execute()
+            return Response(data={'msg': '发送成功，验证码三分钟内有效'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(data={'msg': '服务器出现故障，请稍后再试', 'error': e}, status=status.HTTP_201_CREATED)
+    else:
+        return Response(data={'msg': '发送失败'}, status=status.HTTP_201_CREATED)
+
+# ============================ 修改和完善用户信息 =============================
+
+@api_view(['POST'])
+def ChangeUsernameAPIView(request):
+    """
+    修改用户昵称的api接口
+    """
+    pass
+
+@api_view(['POST'])
+def ChangePasswordAPIView(request):
+    """
+    修改用户密码的api接口
+    """
+    pass
+
+@api_view(['POST'])
+def ChangeEmailAPIView(request):
+    """
+    修改用户邮箱的api接口
+    """
+    pass
+
+@api_view(['POST'])
+def upload_image(request):
+    """
+    上传头像的api接口
+    """
+    pass
+    # form = MyModelForm(request.POST, request.FILES)
+    # if form.is_valid():
+    #     form.save()
+    #     return 0
+
