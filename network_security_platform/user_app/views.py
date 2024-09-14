@@ -29,7 +29,13 @@ def get_userinfo(username):
     telephone = UserBaseInfoModel.objects.get(username=username).telephone
     gender = UserBaseInfoModel.objects.get(username=username).gender
     user_id = UserBaseInfoModel.objects.get(username=username).user_id
-    userinfo = {'username': username, 'telephone': telephone, 'gender': gender, 'user_id': user_id}
+    email = UserBaseInfoModel.objects.get(username=username).email
+    last_login = UserBaseInfoModel.objects.get(username=username).last_login
+    create_time = UserBaseInfoModel.objects.get(username=username).create_time
+
+    userinfo = {'username': username, 'telephone': telephone, 'gender': gender,
+                'user_id': user_id, 'email': email, 'last_login': last_login,
+                'create_time': create_time}
     return userinfo
 
 
