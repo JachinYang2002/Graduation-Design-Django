@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # 添加DRF
-    'user_app'  # 用户模块子应用
+    'channels',
+    'user_app',  # 用户模块子应用
 ]
 
 # 设置分页器
@@ -264,3 +265,5 @@ AUTH_USER_MODEL = 'user_app.UserBaseInfoModel'
 accId = '2c94811c8853194e0188616ffbeb0324'
 accToken = '35a494f497cd4f37989b879a61a35602'
 appId = '2c94811c8853194e0188616ffd23032b'
+
+ASGI_APPLICATION = 'network_security_platform.asgi.application'
