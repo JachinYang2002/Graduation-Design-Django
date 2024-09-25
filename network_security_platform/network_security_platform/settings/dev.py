@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os, time
+import datetime
 from pathlib import Path
 import user_app
 
@@ -26,11 +27,9 @@ SECRET_KEY = 'django-insecure-53qfs267k*2kvd@xnc&+59n!&p$#ugr_h)l979@9@3m9ovqci8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
-
-# Application definition
-
+# ============================== Application definition ======================================
 INSTALLED_APPS = [
     'corsheaders',  # 跨域CORS
     'django.contrib.admin',
@@ -44,16 +43,10 @@ INSTALLED_APPS = [
     'user_app',  # 用户模块子应用
 ]
 
-# 设置分页器
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
-}
-
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Cors
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # Cors
     'django.middleware.common.CommonMiddleware',
     # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -61,8 +54,57 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# ==================================== JWT =======================================
+# 设置分页器
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': (
+        # 配置认证方式的选项 DRF的认证是内部循环遍历每一个注册的认证类，一旦认证通过识别到用
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+    ),
+    'PAGE_SIZE': 10
+}
+
+
+# JWT配置
+JWT_AUTH = {
+    # 设置 JWT 的过期时间
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+     #续期有效期（该设置可在24小时内带未失效的 token 进行续期）
+    'JWT_REFRESH_EXPIRATION': int(time.time()+3600*24),
+}
+
+# ==================================== CORS ========================================
+# 设置允许的header
+CORS_ALLOW_HEADERS = [
+    '*'
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# 设置CORS白名单，凡是出现在白名单中的域名，都可以访问后端接口
+CORS_ORIGIN_WHITELIST = (
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://192.168.5.4:3000',
+    'http://localhost:9090',
+)
+
+CORS_ALLOW_CREDENTIALS = True # 允许携带cookie
+
+# ==================================================================================
+
 ROOT_URLCONF = 'network_security_platform.urls'
 
+WSGI_APPLICATION = 'network_security_platform.wsgi.application'
+
+# ==================================== jinja2 ======================================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.jinja2.Jinja2',  #jinja2模板引擎
@@ -94,12 +136,13 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'network_security_platform.wsgi.application'
 
-
-# Database
+# ==================================== Database =======================================
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# MySQL数据库配置
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -110,48 +153,6 @@ DATABASES = {
         'PORT': '3306',
     }
 }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
-LANGUAGE_CODE = 'zh-hans'
-
-TIME_ZONE = 'Asia/Shanghai'
-
-USE_I18N = True
-
-USE_TZ = False
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-STATIC_URL = 'static/'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 配置Redis数据库
 CACHES = {
@@ -180,6 +181,46 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "session"
 
+
+# ================================= Password validation ==============================
+# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+# ================================ Internationalization =====================================
+# https://docs.djangoproject.com/en/5.1/topics/i18n/
+
+LANGUAGE_CODE = 'zh-hans'
+
+TIME_ZONE = 'Asia/Shanghai'
+
+USE_I18N = True
+
+USE_TZ = False
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.1/howto/static-files/
+
+STATIC_URL = 'static/'
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+
+# ====================================== Logging ===================================
 # 配置项⽬日志
 LOGGING = {
     'version': 1,
@@ -222,37 +263,7 @@ LOGGING = {
     }
 }
 
-# 设置CORS白名单，凡是出现在白名单中的域名，都可以访问后端接口
-CORS_ORIGIN_WHITELIST = (
-    'http://localhost:3000',
-)
-
-# 设置允许的header
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user_app-agent',
-    'x-csrftoken',
-    'x-requested-with',
-    'x-token',
-]
-
-CORS_ALLOW_CREDENTIALS = True # 允许携带cookie
-
-# JWT配置
-JWT_AUTH = {
-	#token 有效期(24小时)
-    'JWT_EXPIRATION': int(time.time()+3600*24),
-     #续期有效期（该设置可在24小时内带未失效的token 进行续期）
-    'JWT_REFRESH_EXPIRATION': int(time.time()+3600*24),
-    # 密钥
-    'JWT_KEY': '1ssdfsdt45yjnfhf',
-}
-
+# ==================================================================================
 # 配置 MEDIA_ROOT 作为上传文件在服务器中的基本路径
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
 # 配置 MEDIA_URL 作为公用 URL，指向上传文件的基本路径
@@ -261,9 +272,14 @@ MEDIA_URL = '/upload/'
 # 配置规则： AUTH_USER_MODEL = '应⽤用名.模型类名'
 AUTH_USER_MODEL = 'user_app.UserBaseInfoModel'
 
+# ===================================== SMS ========================================
 # 容联云短信验证码参数
 accId = '2c94811c8853194e0188616ffbeb0324'
 accToken = '35a494f497cd4f37989b879a61a35602'
 appId = '2c94811c8853194e0188616ffd23032b'
 
+# ===================================== ASGI =======================================
+# 实现前后端数据的传递
 ASGI_APPLICATION = 'network_security_platform.asgi.application'
+
+# ==================================================================================
