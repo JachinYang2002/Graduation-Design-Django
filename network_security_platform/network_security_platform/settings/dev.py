@@ -13,6 +13,7 @@ import os, time
 import datetime
 from pathlib import Path
 import user_app
+from network_security_platform.settings.prod import BASE_DIR
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -27,7 +28,7 @@ SECRET_KEY = 'django-insecure-53qfs267k*2kvd@xnc&+59n!&p$#ugr_h)l979@9@3m9ovqci8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = []
 
 # ============================== Application definition ======================================
 INSTALLED_APPS = [
@@ -38,8 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',  # 添加DRF
-    'channels',
+    'rest_framework',  # DRF 框架
+    'drf_yasg',  # 生成API接口
+    'channels',  # WebSocket连接
     'user_app',  # 用户模块子应用
 ]
 
@@ -58,7 +60,7 @@ MIDDLEWARE = [
 # 设置分页器
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': (
-        # 配置认证方式的选项 DRF的认证是内部循环遍历每一个注册的认证类，一旦认证通过识别到用
+        # 配置认证方式的选项 DRF的认证是内部循环遍历每一个注册的认证类
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
     ),
     'PAGE_SIZE': 10
@@ -67,10 +69,10 @@ REST_FRAMEWORK = {
 
 # JWT配置
 JWT_AUTH = {
-    # 设置 JWT 的过期时间
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
-     #续期有效期（该设置可在24小时内带未失效的 token 进行续期）
-    'JWT_REFRESH_EXPIRATION': int(time.time()+3600*24),
+     # 设置 JWT 的过期时间
+     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+     # 设置 JWT 的响应格式
+     'JWT_RESPONSE_PAYLOAD_HANDLER': BASE_DIR / 'utils.jwt_handler.jwt_response_handler',
 }
 
 # ==================================== CORS ========================================
@@ -227,7 +229,7 @@ LOGGING = {
     'disable_existing_loggers': False, # 是否禁用已经存在的日志器
     'formatters': { # 日志信息显示的格式
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)d %(message)s'
+            'format': '%(levelname)s %(asctime)s %(module)s %(filename)s: %(lineno)d %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(module)s %(lineno)d %(message)s'
@@ -240,13 +242,13 @@ LOGGING = {
     },
     'handlers': { # ⽇志处理⽅法
         'console': { # 向终端中输出日志
-            'level': 'INFO',
+            'level': 'DEBUG',
             'filters': ['require_debug_true'],
             'class': 'logging.StreamHandler',
-            'formatter': 'simple'
+            'formatter': 'verbose',
         },
     'file': { # 向文件中输出日志
-        'level': 'INFO',
+        'level': 'DEBUG',
         'class': 'logging.handlers.RotatingFileHandler',
         'filename': os.path.join(BASE_DIR, 'logs/nsp.log'), # 日志⽂件的位置
         'maxBytes': 300 * 1024 * 1024,
