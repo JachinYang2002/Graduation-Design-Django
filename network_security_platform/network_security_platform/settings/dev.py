@@ -13,7 +13,6 @@ import os, time
 import datetime
 from pathlib import Path
 import user_app
-from network_security_platform.settings.prod import BASE_DIR
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -40,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # DRF 框架
+    'rest_framework_jwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',  # 生成API接口
     'channels',  # WebSocket连接
     'user_app',  # 用户模块子应用
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'utils.blacklist_check.blacklist_check_middleware'
 ]
 
 # ==================================== JWT =======================================
@@ -69,10 +71,16 @@ REST_FRAMEWORK = {
 
 # JWT配置
 JWT_AUTH = {
-     # 设置 JWT 的过期时间
-     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
-     # 设置 JWT 的响应格式
-     'JWT_RESPONSE_PAYLOAD_HANDLER': BASE_DIR / 'utils.jwt_handler.jwt_response_handler',
+    # 设置 JWT 的过期时间
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+    # 设置 JWT 的响应格式
+    'JWT_RESPONSE_PAYLOAD_HANDLER': 'utils.jwt_handler.jwt_response_handler',
+    'JWT_ALGORITHM': 'HS256',
+    'JWT_SECRET_KEY': SECRET_KEY,
+}
+
+SIMPLE_JWT = {
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 # ==================================== CORS ========================================
@@ -105,6 +113,9 @@ CORS_ALLOW_CREDENTIALS = True # 允许携带cookie
 ROOT_URLCONF = 'network_security_platform.urls'
 
 WSGI_APPLICATION = 'network_security_platform.wsgi.application'
+
+# 添加自定义用户模型类（应用名.模型类名）
+AUTH_USER_MODEL = 'user_app.UserBaseInfoModel'
 
 # ==================================== jinja2 ======================================
 TEMPLATES = [
@@ -158,27 +169,34 @@ DATABASES = {
 
 # 配置Redis数据库
 CACHES = {
-    "default": { # 默认
+    "default": {  # 默认
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/0",
         "OPTIONS": {
-        "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
-    "session": { # session
+    "session": {  # session
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/1",
         "OPTIONS": {
-        "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
-    "verify_code": { # 验证码
+    "verify_code": {  # 验证码
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/2",
         "OPTIONS": {
-        "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
+    "blacklist": {  # Token 黑名单
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/3",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "session"
@@ -265,14 +283,11 @@ LOGGING = {
     }
 }
 
-# ==================================================================================
+# ================================== MEDIA_SETTING =================================
 # 配置 MEDIA_ROOT 作为上传文件在服务器中的基本路径
 MEDIA_ROOT = os.path.join(BASE_DIR, 'upload')
 # 配置 MEDIA_URL 作为公用 URL，指向上传文件的基本路径
 MEDIA_URL = '/upload/'
-
-# 配置规则： AUTH_USER_MODEL = '应⽤用名.模型类名'
-AUTH_USER_MODEL = 'user_app.UserBaseInfoModel'
 
 # ===================================== SMS ========================================
 # 容联云短信验证码参数

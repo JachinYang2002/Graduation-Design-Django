@@ -1,9 +1,11 @@
 from django.urls import re_path
-
+from rest_framework_jwt.views import obtain_jwt_token
 from user_app import views
 
 urlpatterns = [
-    re_path('^login_register/$', views.UserLoginRegisterAPIView, name='login_register'),
-    re_path('^logout/$', views.UserLogoutAPIView, name='logout'),
-    re_path('^login_register/send_sms_code/$', views.SMSCodeAPIView, name="send_sms_code"),
+    re_path('^login/$', views.UserLoginAPIView.as_view(), name='login'),  # JWT 签发和认证Token的视图类
+    re_path('^register/$', views.UserRegisterAPIView.as_view(), name='register'),
+    re_path('^logout/$', views.UserLogoutAPIView.as_view(), name='logout'),
+    re_path('^register/send_sms_code/$', views.SMSCodeAPIView, name="send_sms_code"),
+    re_path('^homepage/edit_username/$', views.EditUsernameAPIView, name="edit_username"),
 ]

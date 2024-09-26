@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from utils import base_model
 from django import forms
+import hashlib
+from utils import base_model
 
 
 # Create your models here.
@@ -30,11 +31,8 @@ class UserBaseInfoModel(AbstractUser ,base_model.BaseModel):
         verbose_name_plural = verbose_name
 
 
-# # 创建表单来处理图像上传
-# class MyModelForm(forms.ModelForm):
-#     class Meta:
-#         model = UserBaseInfoModel
-#         fields = ['image']
-#         widgets = {
-#             'image': forms.FileInput(attrs={'class': 'form-control'}),
-#         }
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserBaseInfoModel
+        fields = ['avatar']
+
