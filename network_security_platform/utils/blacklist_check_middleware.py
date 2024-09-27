@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 def blacklist_check_middleware(get_response):
     def middleware(request):
+        a = request.META.get('HTTP_AUTHORIZATION')
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token != 'null':
             try:

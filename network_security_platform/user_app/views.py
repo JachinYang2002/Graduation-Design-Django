@@ -18,7 +18,7 @@ from utils.jwt_handler import jwt_response_handler
 from utils.send_Sms import send_sms_code
 from .models import UserBaseInfoModel, UserProfileForm
 from .serializer.login import UserLoginSerializer
-from .serializer.register import UserRegisterSerializer
+from .serializer.user_serializer import UserRegisterSerializer
 
 
 # Create your views here.
@@ -139,10 +139,10 @@ class UserLogoutAPIView(APIView):
     用户注销的api接口
     """
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         # 获取token
         auth = request.META.get('HTTP_AUTHORIZATION').split(' ')
-        token_str = auth[1] if len(auth) == 2 and auth[0].lower() == 'bearer' else None
+        token_str = auth[1] if len(auth) == 2 and auth[0].lower() == 'jwt' else None
 
         if token_str is not None:
             try:

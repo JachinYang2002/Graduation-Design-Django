@@ -1,7 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django import forms
-import hashlib
 from utils import base_model
 
 
@@ -29,6 +28,9 @@ class UserBaseInfoModel(AbstractUser ,base_model.BaseModel):
         db_table = 't_user_base_info'
         verbose_name = "用户基本信息"
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.username
 
 
 class UserProfileForm(forms.ModelForm):

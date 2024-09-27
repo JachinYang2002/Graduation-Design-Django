@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',  # DRF 框架
     'rest_framework_jwt',
-    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',  # 生成API接口
     'channels',  # WebSocket连接
     'user_app',  # 用户模块子应用
@@ -55,15 +54,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'utils.blacklist_check.blacklist_check_middleware'
+    # 'utils.blacklist_check_middleware.blacklist_check_middleware'
 ]
 
 # ==================================== JWT =======================================
-# 设置分页器
 REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': (
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         # 配置认证方式的选项 DRF的认证是内部循环遍历每一个注册的认证类
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
     ),
     'PAGE_SIZE': 10
 }
@@ -75,13 +76,11 @@ JWT_AUTH = {
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
     # 设置 JWT 的响应格式
     'JWT_RESPONSE_PAYLOAD_HANDLER': 'utils.jwt_handler.jwt_response_handler',
-    'JWT_ALGORITHM': 'HS256',
-    'JWT_SECRET_KEY': SECRET_KEY,
 }
 
-SIMPLE_JWT = {
-    'BLACKLIST_AFTER_ROTATION': True,
-}
+# 指定自定义认证类路径
+AUTHENTICATION_BACKENDS = ['user_app.user_auth.UserLoginBackend']
+
 
 # ==================================== CORS ========================================
 # 设置允许的header
@@ -103,7 +102,6 @@ CORS_ORIGIN_WHITELIST = (
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://192.168.5.4:3000',
-    'http://localhost:9090',
 )
 
 CORS_ALLOW_CREDENTIALS = True # 允许携带cookie
@@ -299,4 +297,8 @@ appId = '2c94811c8853194e0188616ffd23032b'
 # 实现前后端数据的传递
 ASGI_APPLICATION = 'network_security_platform.asgi.application'
 
-# ==================================================================================
+# =================================== 权限白名单 =====================================
+BASE_API = 'api/'
+# 权限认证白名单
+WHITE_LIST = [f'/{BASE_API}user/login/', f'/{BASE_API}user/register', f'/docs/.*']
+REGEX_URL = '^{url}$'

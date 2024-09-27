@@ -1,39 +1,36 @@
-import re, snowflake.client
+import re, snowflake.client, django_redis
 
-
-import django_redis
 from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
 from rest_framework import serializers
 from user_app.models import UserBaseInfoModel
 
 
-
 class UserRegisterSerializer(serializers.Serializer):
-    telephone = serializers.CharField(max_length=11)
+    """
+    用户注册的序列化类
+    """
+    telephone = serializers.CharField(max_length=11, min_length=11)
     password = serializers.CharField(write_only=True)
     code = serializers.CharField(write_only=True)
 
-    @staticmethod
-    def validate_telephone(value):
+
+    def validate_telephone(self, value):
         if not re.match(r'^1[3-9]\d{9}$', value):
             raise serializers.ValidationError('请填写正确的手机号码')
         if UserBaseInfoModel.objects.filter(telephone=value).exists():
             raise serializers.ValidationError('该号码已被注册')
         return value
 
-    @staticmethod
-    def validate_password(value):
+    def validate_password(self, value):
         if not re.match(r'^[A-Za-z][A-Za-z0-9_.*#/]{5,17}$', value):
             raise serializers.ValidationError('密码格式有误')
         return value
 
-    @staticmethod
-    def validate_code(value):
+    def validate_code(self, value):
         if not re.match(r'^[0-9]{4}$', value):
             raise serializers.ValidationError('验证码格式有误')
         return value
-
 
     def create(self, validated_data):
         telephone = validated_data['telephone']
