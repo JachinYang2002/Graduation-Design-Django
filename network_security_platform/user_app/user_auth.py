@@ -3,7 +3,10 @@ from .models import UserBaseInfoModel
 
 class UserLoginBackend(ModelBackend):
     def authenticate(self, request, username=None, telephone=None, password=None):
-        if username is None:
+        """
+        实现用户认证
+        """
+        if username is not None:
             try:
                 user = UserBaseInfoModel.objects.get(username=username)
             except UserBaseInfoModel.DoesNotExist:
@@ -11,7 +14,7 @@ class UserLoginBackend(ModelBackend):
             if user.check_password(password):
                 return user
 
-        if telephone is None:
+        if telephone is not None:
             try:
                 user = UserBaseInfoModel.objects.get(telephone=telephone)
             except UserBaseInfoModel.DoesNotExist:

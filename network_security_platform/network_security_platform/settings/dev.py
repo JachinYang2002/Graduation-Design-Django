@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-53qfs267k*2kvd@xnc&+59n!&p$#ugr_h)l979@9@3m9ovqci8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # ============================== Application definition ======================================
 INSTALLED_APPS = [
@@ -39,21 +39,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # DRF 框架
-    'rest_framework_jwt',
+    'rest_framework_jwt',  # JWT
     'drf_yasg',  # 生成API接口
     'channels',  # WebSocket连接
     'user_app',  # 用户模块子应用
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Cors
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Cors
     'django.middleware.common.CommonMiddleware',
     # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'utils.blacklist_check_middleware.blacklist_check_middleware'
 ]
 
@@ -66,26 +65,36 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
     ),
-    'PAGE_SIZE': 10
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    'SECRET_KEY': SECRET_KEY,
 }
-
 
 # JWT配置
 JWT_AUTH = {
     # 设置 JWT 的过期时间
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
     # 设置 JWT 的响应格式
-    'JWT_RESPONSE_PAYLOAD_HANDLER': 'utils.jwt_handler.jwt_response_handler',
+    'JWT_RESPONSE_PAYLOAD_HANDLER': 'utils.jwt_handler.jwt_response_payload_handler',
+    # 设置 JWT 的payload格式
+    'JWT_PAYLOAD_HANDLER_CLASS': 'utils.jwt_payload_handler.jwt_payload_handler',
 }
 
 # 指定自定义认证类路径
 AUTHENTICATION_BACKENDS = ['user_app.user_auth.UserLoginBackend']
 
-
 # ==================================== CORS ========================================
 # 设置允许的header
 CORS_ALLOW_HEADERS = [
-    '*'
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
 CORS_ALLOW_METHODS = [
@@ -98,11 +107,13 @@ CORS_ALLOW_METHODS = [
 ]
 
 # 设置CORS白名单，凡是出现在白名单中的域名，都可以访问后端接口
-CORS_ORIGIN_WHITELIST = (
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://192.168.5.4:3000',
-)
+# CORS_ORIGIN_WHITELIST = (
+#     'http://localhost:3000',
+#     'http://127.0.0.1:3000',
+#     'http://192.168.5.4:3000',
+# )
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True # 允许携带cookie
 
