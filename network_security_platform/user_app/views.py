@@ -3,7 +3,7 @@ import json, re, django_redis, jwt, random
 from datetime import timedelta
 from django.contrib.auth import authenticate, login, logout
 from django.db import DatabaseError
-from django.middleware.csrf import get_token
+from django.middleware.csrf import get_token, logger
 from rest_framework import status, serializers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -29,15 +29,14 @@ class UserLoginAPIView(ObtainJSONWebToken):
 
         serializer = UserLoginSerializer(data=params)
         if serializer.is_valid():
-            user = serializer.validated_data['user']
-            password = serializer.validated_data['password']
+            auth_user = serializer.validated_data['auth_user']
 
             # 调用通用登录函数
-            res = self.handle_login(request, user, password)
+            res = self.handle_login(request, auth_user)
             if res:
                 response_data = jwt_response_payload_handler(access_token=res['access_token'],
                                                              csrf_token=res['csrf_token'],
-                                                             user=res['user'])
+                                                             user=auth_user)
 
                 return Response(data=response_data, status=status.HTTP_200_OK)
             else:
@@ -53,31 +52,10 @@ class UserLoginAPIView(ObtainJSONWebToken):
                 'msg': first_non_field_error,
             }, status=status.HTTP_202_ACCEPTED)
 
-    def handle_login(self, request, user_identifier, password):
+    def handle_login(self, request, auth_user):
         """
         通用登录函数，处理用户名和电话登录
         """
-        if re.match(r'^1[3-9]\d{9}$', user_identifier):  # 电话登录
-            user = UserBaseInfoModel.objects.filter(telephone=user_identifier).first()
-
-        elif re.match(r'^[A-Za-z][A-Za-z0-9_]{4,19}$', user_identifier):  # 用户名登录
-            user = UserBaseInfoModel.objects.filter(username=user_identifier).first()
-
-        else:
-            return None
-
-        if user and user.check_password(password):
-            return self.check_auth(request, user.username, password)
-        else:
-            return None
-
-
-    def check_auth(self, request, username, password):
-        """
-        检查认证
-        """
-        auth_user = authenticate(username=username, password=password)
-        print(auth_user)
         if auth_user is not None:
             # 创建Token
             payload = jwt_payload_handler(auth_user)
@@ -89,9 +67,11 @@ class UserLoginAPIView(ObtainJSONWebToken):
             return {
                 'access_token': access_token,
                 'csrf_token': csrf_token,
-                'user': auth_user
             }
         return None
+
+
+
 
 
 class UserRegisterAPIView(APIView):
@@ -214,6 +194,24 @@ class SMSCodeAPIView(APIView):
                 'msg': first_non_field_error,
             }, status=status.HTTP_202_ACCEPTED)
 
+# ============================ 获取用户信息传递到前端 =========================
+
+class FetchUserInfoAPIView(APIView):
+    """
+    获取用户信息传递到前端
+    """
+    def post(self, request, *args, **kwargs):
+        request_body = request.body
+        params = json.loads(request_body.decode())
+        logger.info(params)
+
+        return Response({'msg': 'params'},
+                        status=status.HTTP_200_OK)
+
+
+
+
+
 # ============================ 修改和完善用户信息 =============================
 
 
@@ -233,10 +231,10 @@ class EditUsernameAPIView(APIView):
             if UserBaseInfoModel.objects.filter(username=username).exists():
                 return Response(data={'msg': '修改失败：该昵称已被使用'},
                                 status=status.HTTP_202_ACCEPTED)
-            try:
-                UserBaseInfoModel.objects.filter(user_id=user_id).update(username=username)
-            except DatabaseError as e:
-                return Response(data={'msg': '修改失败，请稍后再试', 'errorInfo': e},
+            if UserBaseInfoModel.objects.filter(user_id=user_id).exists():
+                user = UserBaseInfoModel.objects.filter(user_id=user_id).update(username=username)
+            else:
+                return Response(data={'msg': '修改失败'},
                                 status=status.HTTP_202_ACCEPTED)
             return Response(data={'msg': '修改昵称成功'},
                             status=status.HTTP_200_OK)
