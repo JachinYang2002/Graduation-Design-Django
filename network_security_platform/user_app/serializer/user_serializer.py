@@ -4,6 +4,8 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
 from rest_framework import serializers
+from rest_framework.settings import api_settings
+
 from user_app.models import UserBaseInfoModel
 
 
@@ -101,37 +103,37 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        # 从验证属性中获取用户输入的 user 和 password
         user = attrs.get('user')
         password = attrs.get('password')
 
-        # 参数校验：完整性校验、格式校验
+        # 参数校验：完整性校验
         if not all([user, password]):
             raise serializers.ValidationError('缺少必要参数')
 
+        # 参数校验：密码格式校验
         if not re.match(r'^[A-Za-z][A-Za-z0-9_.*#/]{5,17}$', password):
             raise serializers.ValidationError('密码格式有误')
 
-        if re.match(r'^1[3-9]\d{9}$', user):  # 电话登录
-            if UserBaseInfoModel.objects.filter(telephone=user).exists():
-                username = UserBaseInfoModel.objects.get(telephone=user).username
-                auth_user = authenticate(username=username, password=password)
-                if auth_user is not None:
-                    return attrs
-                else:
-                    raise serializers.ValidationError('密码有误')
+        # 验证用户存在性和密码正确性
+        def validate_credentials(field, value):
+            if re.match(r'^1[3-9]\d{9}$', value):  # 电话登录
+                field_name = 'telephone'
+            elif re.match(r'^[A-Za-z][A-Za-z0-9_]{4,19}$', value):  # 用户名登录
+                field_name = 'username'
             else:
-                raise serializers.ValidationError('该号码未被注册')
+                raise serializers.ValidationError('无效的用户名或电话号码')
 
-        elif re.match(r'^[A-Za-z][A-Za-z0-9_]{4,19}$', user):  # 用户名登录
-            if UserBaseInfoModel.objects.filter(username=user).exists():
-                auth_user = authenticate(username=user, password=password)
-                if auth_user is not None:
-                    return attrs
+            if UserBaseInfoModel.objects.filter(**{field_name: user}).exists():
+                auth_user = authenticate(**{field_name: user, 'password': password})
+                if auth_user is not None and auth_user.is_active:
+                    attrs['auth_user'] = auth_user
+
                 else:
-                    raise serializers.ValidationError('密码有误')
+                    raise serializers.ValidationError('密码有误或用户账户已被禁用')
             else:
-                raise serializers.ValidationError('该用户名不存在')
+                raise serializers.ValidationError('该{}未被注册'.format(field))
 
-        else:
-            raise serializers.ValidationError('无效的用户名或电话号码')
+        # 调用抽象方法
+        validate_credentials('user', user)
+
+        return attrs

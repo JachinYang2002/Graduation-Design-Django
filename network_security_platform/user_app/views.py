@@ -1,19 +1,17 @@
 import json, re, django_redis, jwt, random
 
 from datetime import timedelta
-from django.contrib.auth import authenticate, login, logout
-from django.db import DatabaseError
+from django.contrib.auth import login, logout
 from django.middleware.csrf import get_token, logger
 from rest_framework import status, serializers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework_jwt.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework_jwt.views import ObtainJSONWebToken
-from network_security_platform.settings.dev import SECRET_KEY, REST_FRAMEWORK
-from utils.jwt_handler import jwt_response_payload_handler
-from utils.jwt_payload_handler import jwt_payload_handler
+from utils.jwt_handler import jwt_response_payload_handler, jwt_payload_handler
 from utils.send_Sms import send_sms_code
-from .models import UserBaseInfoModel, UserProfileForm
+from .models import UserBaseInfoModel
 from .serializer.user_serializer import UserRegisterSerializer, SMSCodeSerializer, UserLoginSerializer
 from rest_framework.permissions import IsAuthenticated
 
@@ -59,7 +57,7 @@ class UserLoginAPIView(ObtainJSONWebToken):
         if auth_user is not None:
             # 创建Token
             payload = jwt_payload_handler(auth_user)
-            access_token = jwt.encode(payload=payload, key=REST_FRAMEWORK['SECRET_KEY'], algorithm='HS256')
+            access_token = jwt.encode(payload=payload, key=api_settings.JWT_SECRET_KEY, algorithm='HS256').decode('utf-8')
             # 获取CSRF Token
             csrf_token = get_token(request)
             # 保持登录状态
@@ -69,9 +67,6 @@ class UserLoginAPIView(ObtainJSONWebToken):
                 'csrf_token': csrf_token,
             }
         return None
-
-
-
 
 
 class UserRegisterAPIView(APIView):
@@ -107,7 +102,6 @@ class UserLogoutAPIView(APIView):
     """
     用户注销的api接口
     """
-
     def post(self, request, *args, **kwargs):
         # 获取token
         auth = request.META.get('HTTP_AUTHORIZATION').split(' ')
@@ -131,7 +125,6 @@ class UserLogoutAPIView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
             redis_conn.setex('blacklist_%s' % jwt_id, timedelta(minutes=30), 1)
             logout(request)
-
 
         else:
             return Response({'msg': '未提供 Token'},
@@ -203,12 +196,11 @@ class FetchUserInfoAPIView(APIView):
     def post(self, request, *args, **kwargs):
         request_body = request.body
         params = json.loads(request_body.decode())
-        logger.info(params)
+        keys = params['keys']
+        logger.info(keys)
 
         return Response({'msg': 'params'},
                         status=status.HTTP_200_OK)
-
-
 
 
 
@@ -219,7 +211,7 @@ class EditUsernameAPIView(APIView):
     """
     修改用户昵称的api接口
     """
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     def post(self, request, *args, **kwargs):
         # 接收请求参数（表单参数）
         request_body = request.body
@@ -231,8 +223,13 @@ class EditUsernameAPIView(APIView):
             if UserBaseInfoModel.objects.filter(username=username).exists():
                 return Response(data={'msg': '修改失败：该昵称已被使用'},
                                 status=status.HTTP_202_ACCEPTED)
+
             if UserBaseInfoModel.objects.filter(user_id=user_id).exists():
-                user = UserBaseInfoModel.objects.filter(user_id=user_id).update(username=username)
+                try:
+                    UserBaseInfoModel.objects.filter(user_id=user_id).update(username=username)
+                except UserBaseInfoModel.DoesNotExist:
+                    return Response(data={'msg': '修改失败'},
+                                    status=status.HTTP_202_ACCEPTED)
             else:
                 return Response(data={'msg': '修改失败'},
                                 status=status.HTTP_202_ACCEPTED)
@@ -242,8 +239,6 @@ class EditUsernameAPIView(APIView):
         else:
             return Response(data={'msg': '昵称格式有误，请重新输入'},
                             status=status.HTTP_202_ACCEPTED)
-
-
 
 
 @api_view(['POST'])
@@ -265,11 +260,12 @@ def upload_avatar(request):
     """
     上传头像的api接口
     """
-    form = UserProfileForm(request.POST, request.FILES, instance=request.user.avatar)
-    if form.is_valid():
-        form.save()
-        return Response(data={'msg': '头像上传成功'},
-                        status=status.HTTP_200_OK)
-    else:
-        return Response(data={'msg': form.errors},
-                        status=status.HTTP_201_CREATED)
+    pass
+    # form = UserProfileForm(request.POST, request.FILES, instance=request.user.avatar)
+    # if form.is_valid():
+    #     form.save()
+    #     return Response(data={'msg': '头像上传成功'},
+    #                     status=status.HTTP_200_OK)
+    # else:
+    #     return Response(data={'msg': form.errors},
+    #                     status=status.HTTP_201_CREATED)

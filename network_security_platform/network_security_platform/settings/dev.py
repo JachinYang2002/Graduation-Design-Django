@@ -60,6 +60,7 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 配置认证方式的选项 DRF的认证是内部循环遍历每一个注册的认证类
+        'user_app.user_auth.JWTAuthentication',
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -67,7 +68,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
-    'SECRET_KEY': SECRET_KEY,
 }
 
 # JWT配置
@@ -76,8 +76,12 @@ JWT_AUTH = {
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
     # 设置 JWT 的响应格式
     'JWT_RESPONSE_PAYLOAD_HANDLER': 'utils.jwt_handler.jwt_response_payload_handler',
-    # 设置 JWT 的payload格式
-    'JWT_PAYLOAD_HANDLER_CLASS': 'utils.jwt_payload_handler.jwt_payload_handler',
+    # 设置 JWT 的 payload 格式
+    'JWT_PAYLOAD_HANDLER_CLASS': 'utils.jwt_handler.jwt_payload_handler',
+    # JWT 解码
+    'JWT_DECODE_HANDLER': 'utils.jwt_handler.jwt_decode_handler',
+    # 设置前缀
+    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
 }
 
 # 指定自定义认证类路径
