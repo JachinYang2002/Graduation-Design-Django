@@ -208,7 +208,6 @@ class FetchUserInfoAPIView(APIView):
             return Response({'msg': str(e)},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
         user_data = {}
         for key in keys:
             if hasattr(user, key):
