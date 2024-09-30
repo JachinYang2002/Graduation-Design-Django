@@ -97,7 +97,6 @@ class UserRegisterAPIView(APIView):
             return Response({'msg': first_non_field_error,},
                             status=status.HTTP_202_ACCEPTED)
 
-
 class UserLogoutAPIView(APIView):
     """
     用户注销的api接口
