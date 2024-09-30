@@ -4,8 +4,6 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
 from rest_framework import serializers
-from rest_framework.settings import api_settings
-
 from user_app.models import UserBaseInfoModel
 
 

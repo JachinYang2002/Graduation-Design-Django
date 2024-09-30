@@ -15,11 +15,7 @@ def jwt_response_payload_handler(access_token, csrf_token, user=None, request=No
         'msg': "登录成功",
         'access_token': access_token,
         'csrf_token': csrf_token,
-        'userinfo': {
-            'username': user.username,
-            'telephone': user.telephone,
-            'user_id': user.user_id
-        }
+        'user_id': user.user_id
     }
 
 def jwt_payload_handler(user):

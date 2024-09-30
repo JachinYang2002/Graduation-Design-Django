@@ -196,10 +196,37 @@ class FetchUserInfoAPIView(APIView):
     def post(self, request, *args, **kwargs):
         request_body = request.body
         params = json.loads(request_body.decode())
-        keys = params['keys']
-        logger.info(keys)
 
-        return Response({'msg': 'params'},
+        keys = params['keys']
+        user_id = params['user_id']
+
+        try:
+            user = UserBaseInfoModel.objects.filter(user_id=user_id).first()
+            if not user:
+                return Response({'msg': '用户不存在'},
+                                status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            return Response({'msg': str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+        user_data = {}
+        for key in keys:
+            if hasattr(user, key):
+                # 对部分数据进行处理
+                if key == 'email':
+                    email_data = getattr(user, key)
+                    index = email_data.find('@')
+                    user_data[key] = email_data[:2] + '‥‥' + email_data[index: index + 2] + '‥‥'
+                elif key == 'last_login' or key == 'date_joined' or key == 'create_time' or key == 'update_time':
+                    time_data = getattr(user, key)
+                    user_data[key] = time_data.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    user_data[key] = getattr(user, key)
+            else:
+                user_data[key] = None
+
+        return Response({'msg': '获取数据成功', 'user_data': user_data},
                         status=status.HTTP_200_OK)
 
 
@@ -233,7 +260,7 @@ class EditUsernameAPIView(APIView):
             else:
                 return Response(data={'msg': '修改失败'},
                                 status=status.HTTP_202_ACCEPTED)
-            return Response(data={'msg': '修改昵称成功'},
+            return Response(data={'msg': '昵称修改成功'},
                             status=status.HTTP_200_OK)
 
         else:
