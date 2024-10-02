@@ -292,7 +292,7 @@ class EditGenderAPIView(APIView):
                 return Response(data={'msg': '传输的数据有误，请重新登录后重试'},
                                 status=status.HTTP_202_ACCEPTED)
         else:
-            return Response(data={'msg': '数据非法篡改，修改失败'},
+            return Response(data={'msg': '未查询到该用户，修改失败'},
                             status=status.HTTP_202_ACCEPTED)
 
 
@@ -348,18 +348,39 @@ class EditTelephoneAPIView(APIView):
                      status=status.HTTP_202_ACCEPTED)
 
 
+class EditEmailAPIView(APIView):
+    """
+    修改用户邮箱的api接口
+    """
+    permission_classes = (IsAuthenticated,)
+    def post(self, request, *args, **kwargs):
+        request_body = request.body
+        params = json.loads(request_body.decode())
+        user_id = params['user_id']
+        email = params['email']
+
+        if re.match(r'^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$', email):
+            if UserBaseInfoModel.objects.filter(user_id=user_id).exists():
+                try:
+                    UserBaseInfoModel.objects.filter(user_id=user_id).update(email=email)
+                    return Response(data={'msg': '修改成功'},
+                                    status=status.HTTP_200_OK)
+                except UserBaseInfoModel.DoesNotExist:
+                    return Response(data={'msg': '修改失败'},
+                                    status=status.HTTP_202_ACCEPTED)
+            else:
+                return Response(data={'msg': '传输的数据有误，请重新登录后重试'},
+                                status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(data={'msg': '邮箱格式不正确，修改失败'},
+                            status=status.HTTP_202_ACCEPTED)
+
+
 
 @api_view(['POST'])
 def ChangePasswordAPIView(request):
     """
     修改用户密码的api接口
-    """
-    pass
-
-@api_view(['POST'])
-def ChangeEmailAPIView(request):
-    """
-    修改用户邮箱的api接口
     """
     pass
 
