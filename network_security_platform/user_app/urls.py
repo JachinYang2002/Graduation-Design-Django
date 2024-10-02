@@ -9,4 +9,5 @@ urlpatterns = [
     re_path('^fetch_userinfo/$', views.FetchUserInfoAPIView.as_view(), name="fetch_userinfo"),
     re_path('^homepage/edit_username/$', views.EditUsernameAPIView.as_view(), name="edit_username"),
     re_path('^homepage/edit_gender/$', views.EditGenderAPIView.as_view(), name="edit_gender"),
+    re_path('^homepage/edit_telephone/$', views.EditTelephoneAPIView.as_view(), name="edit_telephone"),
 ]

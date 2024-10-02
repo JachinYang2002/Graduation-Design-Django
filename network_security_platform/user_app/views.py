@@ -135,7 +135,7 @@ class UserLogoutAPIView(APIView):
 
 class SMSCodeAPIView(APIView):
     """
-    发送短信验证码完成注册的API接口
+    发送短信验证码的API接口
     """
     def post(self, request, *args, **kwargs):
         # 接收请求参数（表单参数）
@@ -166,11 +166,11 @@ class SMSCodeAPIView(APIView):
             if res['statusCode'] == '000000':
                 try:
                     # 将Redis请求添加到队列
-                    pl.setex('sms_%s' % telephone, 180, sms_code)
+                    pl.setex('sms_%s' % telephone, 300, sms_code)
                     pl.setex('is_send_%s' % telephone, 60, 1)
                     # 执⾏请求
                     pl.execute()
-                    return Response(data={'msg': '发送成功，验证码三分钟内有效'},
+                    return Response(data={'msg': '发送成功，验证码五分钟内有效'},
                                     status=status.HTTP_200_OK)
                 except Exception as e:
                     return Response(data={'msg': '服务器出现故障，请稍后再试', 'error': e},
@@ -231,8 +231,6 @@ class FetchUserInfoAPIView(APIView):
         return Response({'msg': '获取数据成功', 'user_data': user_data},
                         status=status.HTTP_200_OK)
 
-
-
 # ============================ 修改和完善用户信息 =============================
 
 
@@ -271,6 +269,9 @@ class EditUsernameAPIView(APIView):
 
 
 class EditGenderAPIView(APIView):
+    """
+    修改用户性别的api接口
+    """
     permission_classes = (IsAuthenticated,)
     def post(self, request, *args, **kwargs):
         request_body = request.body
@@ -293,6 +294,58 @@ class EditGenderAPIView(APIView):
         else:
             return Response(data={'msg': '数据非法篡改，修改失败'},
                             status=status.HTTP_202_ACCEPTED)
+
+
+class EditTelephoneAPIView(APIView):
+    """
+    修改手机号的api接口
+    """
+    permission_classes = (IsAuthenticated,)
+    def post(self, request, *args, **kwargs):
+        request_body = request.body
+        params = json.loads(request_body.decode())
+        telephone = params['telephone']
+        old_telephone = params['old_telephone']
+        code = params['code']
+        user_id = params['user_id']
+
+        if re.match(r'^1[3-9]\d{9}$', old_telephone):
+            Response(data={'msg': '原手机号格式不正确，请重新输入'},
+                     status=status.HTTP_202_ACCEPTED)
+
+        if not re.match(r'^[0-9]{4}$', code):
+            Response(data={'msg': '验证码格式有误'},
+                     status=status.HTTP_202_ACCEPTED)
+
+        if UserBaseInfoModel.objects.filter(telephone=old_telephone).exists():
+            Response(data={'msg': '原手机号输入不正确，请检查是否有误'},
+                     status=status.HTTP_202_ACCEPTED)
+
+        if UserBaseInfoModel.objects.filter(telephone=telephone).exists():
+            Response(data={'msg': '新手机号与原手机号相同，请勿重复输入'},
+                     status=status.HTTP_202_ACCEPTED)
+
+        if UserBaseInfoModel.objects.filter(user_id=user_id).exists():
+            # 连接Redis数据库，用于验证验证码
+            redis_conn = django_redis.get_redis_connection('verify_code')
+            if redis_conn is not None:
+                redis_code = redis_conn.get('sms_%s' % telephone)
+                if redis_code is None or redis_code.decode('utf-8') != code:
+                    # 如果Redis中没有对应的验证码，或者验证码不匹配，抛出验证错误
+                    Response(data={'msg': '验证码失效或错误'},
+                             status=status.HTTP_202_ACCEPTED)
+                else:
+                    try:
+                        UserBaseInfoModel.objects.filter(user_id=user_id).update(telephone=telephone)
+                        return Response(data={'msg': '修改成功'},
+                                        status=status.HTTP_200_OK)
+                    except UserBaseInfoModel.DoesNotExist:
+                        return Response(data={'msg': '修改失败'},
+                                        status=status.HTTP_202_ACCEPTED)
+
+        else:
+            Response(data={'msg': '传输的数据有误，请重新登录后重试'},
+                     status=status.HTTP_202_ACCEPTED)
 
 
 
