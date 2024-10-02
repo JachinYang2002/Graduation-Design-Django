@@ -192,6 +192,7 @@ class FetchUserInfoAPIView(APIView):
     """
     获取用户信息传递到前端
     """
+    permission_classes = (IsAuthenticated,)
     def post(self, request, *args, **kwargs):
         request_body = request.body
         params = json.loads(request_body.decode())
@@ -219,6 +220,9 @@ class FetchUserInfoAPIView(APIView):
                 elif key == 'last_login' or key == 'date_joined' or key == 'create_time' or key == 'update_time':
                     time_data = getattr(user, key)
                     user_data[key] = time_data.strftime('%Y-%m-%d %H:%M:%S')
+                elif key == 'telephone':
+                    telephone_data = getattr(user, key)
+                    user_data[key] = telephone_data[:3] + " **** " + telephone_data[-4:]
                 else:
                     user_data[key] = getattr(user, key)
             else:
@@ -264,6 +268,32 @@ class EditUsernameAPIView(APIView):
         else:
             return Response(data={'msg': '昵称格式有误，请重新输入'},
                             status=status.HTTP_202_ACCEPTED)
+
+
+class EditGenderAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+    def post(self, request, *args, **kwargs):
+        request_body = request.body
+        params = json.loads(request_body.decode())
+        gender = params['sex']
+        user_id = params['user_id']
+
+        if re.match(r'^[012]$', gender):
+            if UserBaseInfoModel.objects.filter(user_id=user_id).exists():
+                try:
+                    UserBaseInfoModel.objects.filter(user_id=user_id).update(gender=gender)
+                    return Response(data={'msg': '修改成功'},
+                                    status=status.HTTP_200_OK)
+                except UserBaseInfoModel.DoesNotExist:
+                    return Response(data={'msg': '修改失败'},
+                                    status=status.HTTP_202_ACCEPTED)
+            else:
+                return Response(data={'msg': '传输的数据有误，请重新登录后重试'},
+                                status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(data={'msg': '数据非法篡改，修改失败'},
+                            status=status.HTTP_202_ACCEPTED)
+
 
 
 @api_view(['POST'])
