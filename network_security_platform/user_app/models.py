@@ -9,7 +9,6 @@ class UserBaseInfoModel(AbstractUser ,base_model.BaseModel):
     """
     用户基本信息模型
     """
-    
     username = models.CharField(verbose_name='昵称', max_length=10, unique=True)
     password = models.CharField(verbose_name='密码', max_length=128)
     telephone = models.CharField(verbose_name='注册手机号' ,max_length=11, unique=True)

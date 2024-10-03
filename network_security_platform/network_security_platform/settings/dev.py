@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'drf_yasg',  # 生成API接口
     'channels',  # WebSocket连接
     'user_app',  # 用户模块子应用
+    'CTF_app',
 ]
 
 MIDDLEWARE = [

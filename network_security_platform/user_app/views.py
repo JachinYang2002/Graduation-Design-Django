@@ -3,9 +3,9 @@ import json, re, django_redis, jwt, random
 from datetime import timedelta
 from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import make_password
-from django.middleware.csrf import get_token, logger
+from django.middleware.csrf import get_token
 from rest_framework import status, serializers
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from rest_framework.views import APIView
