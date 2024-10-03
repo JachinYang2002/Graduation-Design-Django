@@ -11,4 +11,5 @@ urlpatterns = [
     re_path('^homepage/edit_gender/$', views.EditGenderAPIView.as_view(), name="edit_gender"),
     re_path('^homepage/edit_telephone/$', views.EditTelephoneAPIView.as_view(), name="edit_telephone"),
     re_path('^homepage/edit_email/$', views.EditEmailAPIView.as_view(), name="edit_email"),
+    re_path('^forgetpwd/$', views.ForgetPasswordAPIView.as_view(), name="forget_password"),
 ]

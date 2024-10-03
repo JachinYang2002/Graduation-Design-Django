@@ -86,9 +86,6 @@ class SMSCodeSerializer(serializers.Serializer):
         if not re.match(r'^1[3-9]\d{9}$', value):
             raise serializers.ValidationError('请填写正确的手机号码')
 
-        if UserBaseInfoModel.objects.filter(telephone=value).exists():
-            raise serializers.ValidationError('该号码已被注册')
-
         return value
 
 

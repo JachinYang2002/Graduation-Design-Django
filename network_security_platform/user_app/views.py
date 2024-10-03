@@ -2,9 +2,10 @@ import json, re, django_redis, jwt, random
 
 from datetime import timedelta
 from django.contrib.auth import login, logout
+from django.contrib.auth.hashers import make_password
 from django.middleware.csrf import get_token, logger
 from rest_framework import status, serializers
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from rest_framework.views import APIView
@@ -377,12 +378,62 @@ class EditEmailAPIView(APIView):
 
 
 
-@api_view(['POST'])
-def ChangePasswordAPIView(request):
+class ForgetPasswordAPIView(APIView):
     """
     修改用户密码的api接口
     """
-    pass
+    def post(self, request, *args, **kwargs):
+        request_body = request.body
+        params = json.loads(request_body.decode())
+        telephone = params['telephone']
+        code = params['code']
+        password = params['password']
+
+        if not re.match(r'^1[3-9]\d{9}$', telephone):
+            return Response(data={'msg': '请填写正确的手机号码'},
+                            status=status.HTTP_202_ACCEPTED)
+
+        if not re.match(r'^[A-Za-z][A-Za-z0-9_.*#/]{5,17}$', password):
+            return Response(data={'msg': '密码格式有误'},
+                            status=status.HTTP_202_ACCEPTED)
+
+        if not re.match(r'^[0-9]{4}$', code):
+            return Response(data={'msg': '验证码格式有误'},
+                            status=status.HTTP_202_ACCEPTED)
+
+        if UserBaseInfoModel.objects.filter(telephone=telephone).exists():
+            # 连接Redis数据库，用于验证验证码
+            try:
+                redis_conn = django_redis.get_redis_connection('verify_code')
+            except:
+                return Response(data={'msg': '数据库连接失败'},
+                                status=status.HTTP_202_ACCEPTED)
+
+            if redis_conn is not None:
+                redis_code = redis_conn.get('sms_%s' % telephone)
+                if redis_code is None or redis_code.decode('utf-8') != code:
+                    # 如果Redis中没有对应的验证码，或者验证码不匹配，抛出验证错误
+                    Response(data={'msg': '验证码失效或错误'},
+                             status=status.HTTP_202_ACCEPTED)
+
+                # 密码加密
+                encrypt_password = make_password(password)
+
+                # 保存数据
+                try:
+                    UserBaseInfoModel.objects.filter(telephone=telephone).update(password=encrypt_password)
+                    return Response(data={'msg': '修改成功'},
+                                    status=status.HTTP_200_OK)
+                except UserBaseInfoModel.DoesNotExist:
+                    return Response(data={'msg': '修改失败'},
+                                    status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(data={'msg': '该手机号未被注册'},
+                            status=status.HTTP_202_ACCEPTED)
+
+
+
+
 
 @api_view(['POST'])
 def upload_avatar(request):
