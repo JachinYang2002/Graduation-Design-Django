@@ -17,14 +17,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         action = options['action']
+        topic_name = args[0]
         if action == 'start':
             # 启动容器的逻辑
-            call(['docker', 'run', '-d', '--rm', '--name', 'nginx', '-p', '80:80', 'nginx'])
+            call(['docker', 'run', '-d', '--rm', '--name', 'nginx', '-p', '80:80', topic_name])
             return '环境启动成功'
         elif action == 'stop':
             # 停止容器的逻辑
-            call(['docker', 'stop', 'nginx'])
-            return '容器停止并销毁成功'
+            call(['docker', 'stop', topic_name])
+            return '环境停止并销毁成功'
 
 
 
@@ -36,7 +37,10 @@ class CTFTopicView(APIView):
 
         # 提取操作类型
         action = params.get('action')
-        args = ()
+
+        # 提取题目名称
+        topic = params.get('name')
+        args = (topic,)
 
         # 创建 Command 实例并模拟 handle 方法的命令行参数
         command = Command()
