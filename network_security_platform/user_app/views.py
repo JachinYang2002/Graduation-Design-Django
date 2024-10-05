@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework_jwt.views import ObtainJSONWebToken
+
+from CTF_app.models import WebChallenge, UserWebQuestionStatus
 from utils.jwt_handler import jwt_response_payload_handler, jwt_payload_handler
 from utils.send_Sms import send_sms_code
 from .models import UserBaseInfoModel
@@ -82,7 +84,19 @@ class UserRegisterAPIView(APIView):
         serializer = UserRegisterSerializer(data=params)
         if serializer.is_valid():
             try:
-                serializer.save()
+                user = serializer.save()
+                user_pk = int(user.pk)
+
+                # 同步用户题库状态
+                if WebChallenge.objects.exists():  # 查询Web题库中是否有题目
+                    all_questions = WebChallenge.objects.all()  # 获取所有对象
+
+                    # 遍历对象获取id，并将自己的id和题目的id传入 t_CTF_user_web_status 表中
+                    for obj in all_questions:
+                        print(obj.pk)
+                        UserWebQuestionStatus.objects.create(web_question_id=obj.pk, user_tag_id=user_pk)
+
+
                 return Response({'msg': '注册成功'},
                                 status=status.HTTP_200_OK)
             except serializers.ValidationError as e:

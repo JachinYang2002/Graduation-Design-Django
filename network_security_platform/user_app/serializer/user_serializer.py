@@ -128,7 +128,6 @@ class UserLoginSerializer(serializers.Serializer):
             else:
                 raise serializers.ValidationError('该{}未被注册'.format(field))
 
-        # 调用抽象方法
         validate_credentials('user', user)
 
         return attrs
