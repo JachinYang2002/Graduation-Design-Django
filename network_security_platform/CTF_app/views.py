@@ -7,8 +7,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 
 from CTF_app.models import WebChallenge, WebActiveChallenge, UserWebQuestionStatus
-from CTF_app.serializer.CTF_serializer import UploadWebChallengeSerializer, CTFWebListSerializer, CTFWebStatusSerializer
-from user_app.models import UserBaseInfoModel
+from CTF_app.serializer.CTF_serializer import UploadWebChallengeSerializer, CTFWebListSerializer
 
 
 # Create your views here.
