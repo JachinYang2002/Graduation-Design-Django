@@ -31,11 +31,8 @@ class CTFQuestionType(models.Model):
         return self.title
 
 
-
 class WebChallenge(BaseChallenge):
     # Web 特定的字段
-    ip = models.CharField(verbose_name='题目IP地址', max_length=25)
-
     question_type = models.ForeignKey("CTFQuestionType", on_delete=models.SET_NULL, verbose_name="所属题目类型", related_name='web_list',null=True, blank=True)
 
     class Meta:
@@ -86,4 +83,19 @@ class UserWebQuestionStatus(models.Model):
 
     def __str__(self):
         return f'{self.user_tag} - {self.web_question}'
+
+
+class WebActiveChallenge(models.Model):
+    """
+    已开启的Web题镜像
+    """
+    image = models.ForeignKey('WebChallenge', verbose_name='容器对应的镜像', on_delete=models.CASCADE, related_name='web_active_question')
+    user_tag = models.ForeignKey('user_app.UserBaseInfoModel', verbose_name='开启容器的用户', on_delete=models.CASCADE, related_name='web_active_topic')
+    question_name = models.CharField(verbose_name='容器名称', max_length=50)
+    port = models.IntegerField(verbose_name='分配出的端口号')
+
+    class Meta:
+        db_table = 't_CTF_web_active'
+        verbose_name = 'Web题型分配出的端口号表'
+        verbose_name_plural = verbose_name
 
