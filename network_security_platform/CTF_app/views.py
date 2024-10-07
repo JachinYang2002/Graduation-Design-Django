@@ -24,12 +24,13 @@ class Command(BaseCommand):
         image_title = args[0]  # 数据库中镜像名称
         question_name = args[1]  # 为每个用户的该题单独使用一个docker名字
         port = args[2]  # 分配给该题的端口号
+        flag = args[3]
 
         if action == 'start':
             # 启动容器的逻辑
             if image_title == 'web_2016_piapiapia':
                 call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
-                      '-e', 'FLAG=flag{test_flag}', '-p', '{}:80'.format(port), image_title])
+                      '-e', 'FLAG={}'.format(flag), '-p', '{}:80'.format(port), image_title])
                 return '环境启动成功'
 
             call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
@@ -54,13 +55,15 @@ class CTFWebTopicView(APIView):
         # 提取镜像名称
         title = params.get('title')
 
-        # 根据题目名称获取题目IP地址和端口号
+        # 判断该镜像是否存在
         if not WebChallenge.objects.filter(title=title).exists():  # 判断该镜像是否存在
             return Response(data={'msg': "该题目不存在或已被删除"},
                             status=status.HTTP_202_ACCEPTED)
 
-        # 获取该镜像的pk
-        image_pk = WebChallenge.objects.filter(title=title).first().pk
+        # 获取该镜像的pk和flag
+        image = WebChallenge.objects.filter(title=title).first()
+        image_pk = image.pk
+        image_flag = image.flag
 
         if action == 'start':
             # 分配端口号
@@ -70,7 +73,7 @@ class CTFWebTopicView(APIView):
                 tel = request.user.telephone
                 question_name = tel[-4:] + '_' + title
 
-                args = (title, question_name, port)
+                args = (title, question_name, port, image_flag)
                 options = {'action': action}
                 # 创建 Command 实例并模拟 handle 方法的命令行参数
                 command = Command()
@@ -90,7 +93,7 @@ class CTFWebTopicView(APIView):
                                 status=status.HTTP_202_ACCEPTED)
         elif action == 'stop':
             question_name = WebActiveChallenge.objects.filter(user_tag_id=request.user.id, image_id=image_pk).first().question_name
-            args = (0, question_name, 0)
+            args = (0, question_name, 0, 0)
             options = {'action': action}
             # 创建 Command 实例并模拟 handle 方法的命令行参数
             command = Command()
