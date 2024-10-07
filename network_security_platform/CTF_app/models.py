@@ -69,7 +69,7 @@ class MiscChallenge(BaseChallenge):
 
 class UserWebQuestionStatus(models.Model):
     """
-    用户解题状态模型
+    用户Web解题状态模型
     """
     user_tag = models.ForeignKey('user_app.UserBaseInfoModel', verbose_name='用户', on_delete=models.SET_NULL, related_name='user_topic', null=True, blank=True)
     web_question = models.ForeignKey("WebChallenge", verbose_name='web题', on_delete=models.CASCADE, related_name='web_topic')

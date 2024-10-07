@@ -1,14 +1,20 @@
 import json
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.core.management.base import BaseCommand, CommandError
 from subprocess import call
+
+from django.dispatch import receiver
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 
 from CTF_app.models import WebChallenge, WebActiveChallenge, UserWebQuestionStatus
 from CTF_app.serializer.CTF_serializer import UploadWebChallengeSerializer, CTFWebListSerializer
+from CTF_app.signals import container_stopped_signal
 from user_app.models import UserBaseInfoModel
+
 
 
 # Create your views here.
@@ -45,6 +51,9 @@ class Command(BaseCommand):
 
 # CTF题目视图类命名规则：CTF+'题目名称'+View  exp: CTFNginxView
 class CTFWebTopicView(APIView):
+    """
+    启动或停止Docker容器
+    """
     def post(self, request, *args, **kwargs):
         request_body = request.body
         params = json.loads(request_body.decode())
@@ -87,7 +96,7 @@ class CTFWebTopicView(APIView):
                                     status=status.HTTP_200_OK)
                 except CommandError as e:
                     return Response(data={'error': str(e)},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                                    status=status.HTTP_202_ACCEPTED)
             else:
                 return Response(data={'msg': "很抱歉，端口号已全被分配完，请稍后重试"},
                                 status=status.HTTP_202_ACCEPTED)
@@ -99,13 +108,21 @@ class CTFWebTopicView(APIView):
             command = Command()
             try:
                 msg = command.handle(*args, **options)
+
+                # 异步处理删库操作
+                # async_to_sync(get_channel_layer(), container_stopped_signal.send)({'image_pk': image_pk})
+
             except CommandError as e:
                 return Response(data={'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-            # 镜像销毁后将端口号从 t_CTF_web_active 表中删除
             WebActiveChallenge.objects.filter(image_id=image_pk).delete()
 
             return Response(data={'msg': msg}, status=status.HTTP_200_OK)
+
+    # @receiver(container_stopped_signal)
+    # def container_stopped_handler(self, sender, **kwargs):
+    #     image_pk = kwargs.get('image_pk')
+    #     WebActiveChallenge.objects.filter(image_id=image_pk).delete()
 
     def allocate_port(self):
         # 定义Web题端口号范围 49152-50152 共 一千 个端口号
@@ -124,6 +141,43 @@ class CTFWebTopicView(APIView):
                 return port
 
         return None  # 如果端口号用尽，返回 None
+
+
+class CTFWebCheckFlagView(APIView):
+    """
+    验证用户提交的flag
+    """
+    def post(self, request, *args, **kwargs):
+        request_body = request.body
+        params = json.loads(request_body.decode())
+
+        submit_flag = params.get('flag')  # 用户提交的Flag
+        title = params.get('title')  # 题目所对应的镜像title
+
+        image = WebChallenge.objects.filter(title=title).first()  # 镜像对象
+
+        # 验证用户提交的flag与该镜像对应的flag是否一致
+        if submit_flag == image.flag:
+            # 更改该用户对该题的完成状态
+            obj = UserWebQuestionStatus.objects.filter(user_tag=request.user, web_question=image).first()
+            obj.is_completed = True
+            obj.save()
+
+            # 关闭环境
+            question_name = WebActiveChallenge.objects.filter(image=image, user_tag=request.user).first().question_name
+
+            args = (0, question_name, 0, 0)
+            options = {'action': "stop"}
+            # 创建 Command 实例并模拟 handle 方法的命令行参数
+            command = Command()
+            msg = command.handle(*args, **options)
+
+            return Response({'msg': "恭喜您，挑战成功！", 'other_msg': msg},
+                            status=status.HTTP_200_OK)
+        else:
+            return Response({'msg': "您提交的Flag不正确哦！"},
+                            status=status.HTTP_202_ACCEPTED)
+
 
 
 # 发送题库数据类
