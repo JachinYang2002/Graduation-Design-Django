@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from CTF_app.models import WebChallenge, WebActiveChallenge, UserWebQuestionStatus
 from CTF_app.serializer.CTF_serializer import UploadWebChallengeSerializer, CTFWebListSerializer
+from user_app.models import UserBaseInfoModel
 
 
 # Create your views here.
@@ -157,10 +158,32 @@ class UploadWebChallengeView(APIView):
 
         serializer = UploadWebChallengeSerializer(data=params)
         if serializer.is_valid():
-            serializer.save()
+            challenge = serializer.save()
+
+            # 为每个用户更新状态
+            self.update_user_challenge_status(challenge)
+
             return Response(data={'msg': '上传成功'},
                             status=status.HTTP_200_OK)
         else:
             return Response(data={'error': '上传失败'},
                             status=status.HTTP_202_ACCEPTED)
+
+    def update_user_challenge_status(self, challenge):
+        """
+        为每个用户更新或创建解题状态
+        """
+        all_users = UserBaseInfoModel.objects.all()
+        for user in all_users:
+            # 检查是否已经存在状态，如果不存在则创建：
+            # status_obj 是查询到的 UserWebQuestionStatus 实例，或者是新创建的实例
+            # created 是一个布尔值，表示是否创建了一个新的记录
+            status_obj, created = UserWebQuestionStatus.objects.get_or_create(
+                user_tag=user,
+                web_question=challenge
+            )
+            # 如果是新创建的，可以设置默认状态
+            if created:
+                status_obj.is_completed = False
+                status_obj.save()
 
