@@ -10,6 +10,7 @@ class BaseChallenge(models.Model):
     points = models.IntegerField(verbose_name='奖励点', default=30)
     exp = models.IntegerField(verbose_name='奖励经验', default=10)
     flag = models.CharField(verbose_name='题目答案flag', max_length=100)
+    level = models.IntegerField(verbose_name='题目难度等级', default=0)  # 0：初级  1：中级 2：高级
 
     class Meta:
         abstract = True  # 使这个类成为一个抽象基类

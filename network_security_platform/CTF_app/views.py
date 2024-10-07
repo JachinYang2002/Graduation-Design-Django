@@ -27,6 +27,11 @@ class Command(BaseCommand):
 
         if action == 'start':
             # 启动容器的逻辑
+            if image_title == 'web_2016_piapiapia':
+                call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
+                      '-e', 'FLAG=flag{test_flag}', '-p', '{}:80'.format(port), image_title])
+                return '环境启动成功'
+
             call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
                     '-p', '{}:80'.format(port), image_title])
             return '环境启动成功'
