@@ -33,8 +33,9 @@ class Command(BaseCommand):
         flag = args[3]
 
         if action == 'start':
+            images = ['web_2016_piapiapia', 'web_2015_filemanager']
             # 启动容器的逻辑
-            if image_title == 'web_2016_piapiapia':
+            if image_title in images:
                 call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
                       '-e', 'FLAG={}'.format(flag), '-p', '{}:80'.format(port), image_title])
                 return '环境启动成功'
