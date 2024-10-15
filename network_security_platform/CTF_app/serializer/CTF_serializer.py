@@ -8,7 +8,7 @@ class UploadWebChallengeSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = WebChallenge
-        fields = ['title', 'description', 'points', 'exp', 'flag', 'question_type']
+        fields = ['title', 'description', 'points', 'exp', 'flag', 'question_type', 'level']
 
     def validate(self, attrs):
         if not all(attrs.get(field) for field in ['title', 'description', 'points', 'exp', 'flag', 'question_type']):
@@ -32,6 +32,6 @@ class CTFWebListSerializer(serializers.ModelSerializer):
     status = CTFWebStatusSerializer(read_only=True)
     class Meta:
         model = WebChallenge
-        fields = ['title', 'description', 'points', 'exp', 'status']
+        fields = ['title', 'description', 'points', 'exp', 'status', 'level']
 
 

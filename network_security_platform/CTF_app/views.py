@@ -1,18 +1,14 @@
 import json
 
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.core.management.base import BaseCommand, CommandError
 from subprocess import call
 
-from django.dispatch import receiver
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 
 from CTF_app.models import WebChallenge, WebActiveChallenge, UserWebQuestionStatus
 from CTF_app.serializer.CTF_serializer import UploadWebChallengeSerializer, CTFWebListSerializer
-from CTF_app.signals import container_stopped_signal
 from user_app.models import UserBaseInfoModel
 
 
@@ -33,15 +29,15 @@ class Command(BaseCommand):
         flag = args[3]
 
         if action == 'start':
-            images = ['web_2016_piapiapia', 'web_2015_filemanager']
-            # 启动容器的逻辑
-            if image_title in images:
-                call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
-                      '-e', 'FLAG={}'.format(flag), '-p', '{}:80'.format(port), image_title])
-                return '环境启动成功'
+            # images = ['web_2016_piapiapia', 'web_2015_filemanager', 'web_2018_unfinish']
+            # # 启动容器的逻辑
+            # if image_title in images:
+            #     call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
+            #           '-e', 'FLAG={}'.format(flag), '-p', '{}:80'.format(port), image_title])
+            #     return '环境启动成功'
 
             call(['docker', 'run', '-d', '--rm', '--name', question_name, '--network', 'CTFWeb',
-                    '-p', '{}:80'.format(port), image_title])
+                    '-e', 'FLAG={}'.format(flag), '-p', '{}:80'.format(port), image_title])
             return '环境启动成功'
 
         elif action == 'stop':
